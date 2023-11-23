@@ -22,6 +22,11 @@ facial_labels = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 
 
 text_model = load_model('Text Emotion Detection (BiLSTM).h5')
 text_class_names = ['joy', 'fear', 'anger', 'sadness', 'neutral']
+emojis = {
+    'angry': '😠', 'disgust': '🤢', 'fear': '😨', 'happy': '😊',
+    'neutral': '😐', 'sad': '😢', 'surprise': '😲', 
+    'joy': '😊', 'anger': '😠', 'sadness': '😢'
+}
 
 def preprocess_text(text, max_len=500):
     tokenizer = Tokenizer(num_words=5000)
@@ -38,6 +43,15 @@ def predict_text_emotion():
     predicted_emotion_idx = np.argmax(prediction, axis=1)[0]
     text_emotion = text_class_names[predicted_emotion_idx]
     text_emotion_label.config(text=f"Emotion: {text_emotion}")
+
+def compare_emotions():
+    if text_emotion and facial_emotion:
+        match_status = "Matched" if text_emotion == facial_emotion else "Not Matched"
+        emoji_to_show = emojis.get(text_emotion, '😕') if match_status == "Matched" else '😕'
+        match_status_label.config(text=f"Match Status: {match_status}")
+        emoji_label.config(text=emoji_to_show)
+    root.after(500, compare_emotions)
+
 
 def update_image():
     global facial_emotion
@@ -89,5 +103,19 @@ video_label.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 start_webcam_thread = threading.Thread(target=start_webcam)
 start_webcam_thread.daemon = True
 start_webcam_thread.start()
+
+status_frame = ttk.Frame(root, padding="10")
+status_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+match_status_label = ttk.Label(status_frame, text="Match Status: None")
+match_status_label.grid(row=0, column=0, sticky=tk.W)
+
+emoji_label = ttk.Label(status_frame, text="", font=("Helvetica", 36))
+emoji_label.grid(row=0, column=1, sticky=tk.W)
+
+
+compare_emotions_thread = threading.Thread(target=compare_emotions)
+compare_emotions_thread.daemon = True
+compare_emotions_thread.start()
+
 
 root.mainloop()
